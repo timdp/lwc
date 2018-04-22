@@ -6,55 +6,91 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 )
 
-type Opts struct {
+type Config struct {
 	countLines bool
 	countWords bool
 	countChars bool
 	countBytes bool
+	version    bool
+	files      []string
 }
 
-func getOpts() Opts {
-	var opts Opts
-	for _, arg := range os.Args {
+const CARRIAGE_RETURN byte = 13
+const SPACE byte = 32
+
+var version = "master"
+
+func buildConfig(config *Config) {
+	for _, arg := range os.Args[1:] {
 		switch {
 		case arg == "-l" || arg == "--lines":
-			opts.countLines = true
+			config.countLines = true
 		case arg == "-w" || arg == "--words":
-			opts.countWords = true
+			config.countWords = true
 		case arg == "-m" || arg == "--chars":
-			opts.countChars = true
+			config.countChars = true
 		case arg == "-c" || arg == "--bytes":
-			opts.countBytes = true
+			config.countBytes = true
+		case arg == "--version":
+			config.version = true
+		case arg != "-" && arg[0] == '-':
+			log.Fatalf("Invalid option: %s", arg)
+		default:
+			config.files = append(config.files, arg)
 		}
 	}
-	if !(opts.countLines || opts.countWords || opts.countChars || opts.countBytes) {
-		opts.countLines = true
-		opts.countWords = true
-		opts.countBytes = true
+	if !(config.countLines || config.countWords || config.countChars || config.countBytes) {
+		config.countLines = true
+		config.countWords = true
+		config.countBytes = true
 	}
-	return opts
 }
 
-func buildSplits(opts Opts) []bufio.SplitFunc {
-	var splits []bufio.SplitFunc
-	if opts.countLines {
-		splits = append(splits, bufio.ScanLines)
+func buildSplits(config *Config, splits *[]bufio.SplitFunc) {
+	if config.countLines {
+		*splits = append(*splits, bufio.ScanLines)
 	}
-	if opts.countWords {
-		splits = append(splits, bufio.ScanWords)
+	if config.countWords {
+		*splits = append(*splits, bufio.ScanWords)
 	}
-	if opts.countChars {
-		splits = append(splits, bufio.ScanRunes)
+	if config.countChars {
+		*splits = append(*splits, bufio.ScanRunes)
 	}
-	if opts.countBytes {
-		splits = append(splits, bufio.ScanBytes)
+	if config.countBytes {
+		*splits = append(*splits, bufio.ScanBytes)
 	}
-	return splits
+}
+
+func openFile(name string) *os.File {
+	if name == "-" {
+		return os.Stdin
+	}
+	file, err := os.Open(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
+}
+
+func printCounts(counts []int, label string, cr bool) {
+	var sb strings.Builder
+	if cr {
+		sb.WriteByte(CARRIAGE_RETURN)
+	}
+	sb.WriteString(fmt.Sprintf("%8d", counts[0]))
+	for i := 1; i < len(counts); i++ {
+		sb.WriteByte(SPACE)
+		sb.WriteString(fmt.Sprintf("%8d", counts[i]))
+	}
+	if label != "" {
+		sb.WriteByte(SPACE)
+		sb.WriteString(label)
+	}
+	os.Stdout.WriteString(sb.String())
 }
 
 func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int, i int, wg *sync.WaitGroup) {
@@ -72,28 +108,32 @@ func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int
 	}
 }
 
-func printCounts(numCounts int, update chan int, wg *sync.WaitGroup) {
+func collectCounts(name string, numCounts int, totals *[]int, update chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	counts := make([]int, numCounts)
-	out := make([]string, numCounts)
-	for i := 0; i < numCounts; i++ {
-		out[i] = "0"
-	}
-	done := 0
-	for done < numCounts {
-		i := <-update
-		if i < 0 {
-			done++
+	// Print zeroes straightaway in case file is empty
+	printCounts(counts, name, false)
+
+	completed := 0
+	for completed < numCounts {
+		index := <-update
+		if index < 0 {
+			// Received -1, so done processing
+			completed++
 		} else {
-			counts[i]++
-			out[i] = strconv.Itoa(counts[i])
-			fmt.Printf("\r%s", strings.Join(out, " "))
+			// Received index, so increment corresponding counter(s)
+			counts[index]++
+			if totals != nil {
+				(*totals)[index]++
+			}
+			// Go to start of line and print updated counts
+			printCounts(counts, name, true)
 		}
 	}
 }
 
-func pipeStdin(pws []*io.PipeWriter, wg *sync.WaitGroup) {
-	defer wg.Done()
+func pipeSource(file *os.File, pws []*io.PipeWriter) {
 	numCounts := len(pws)
 	writers := make([]io.Writer, numCounts)
 	for i := 0; i < numCounts; i++ {
@@ -101,17 +141,12 @@ func pipeStdin(pws []*io.PipeWriter, wg *sync.WaitGroup) {
 		writers[i] = io.Writer(pws[i])
 	}
 	writer := io.MultiWriter(writers...)
-	if _, err := io.Copy(writer, os.Stdin); err != nil {
+	if _, err := io.Copy(writer, file); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func main() {
-	// Read command-line args
-	opts := getOpts()
-
-	// Determine which counters to use
-	splits := buildSplits(opts)
+func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]int) {
 	numCounts := len(splits)
 
 	// For each counter, set up a pipe for stdin
@@ -126,22 +161,74 @@ func main() {
 
 	// Set up WaitGroup for our goroutines
 	var wg sync.WaitGroup
-	wg.Add(numCounts + 2)
+	wg.Add(numCounts + 1)
 
 	// Start listening for updates to counters
-	go printCounts(numCounts, update, &wg)
+	go collectCounts(name, numCounts, totals, update, &wg)
 
 	// Start reading from pipes
 	for i, split := range splits {
 		go consumeReader(prs[i], split, update, i, &wg)
 	}
 
-	// Start writing to pipes
-	go pipeStdin(pws, &wg)
+	// Write to pipes
+	pipeSource(file, pws)
 
 	// Wait for goroutines to complete
 	wg.Wait()
 
 	// Write final newline
 	fmt.Println()
+}
+
+func processFiles(files []string, splits []bufio.SplitFunc) {
+	// If no files given, process stdin
+	if len(files) == 0 {
+		processFile(os.Stdin, "", splits, nil)
+		return
+	}
+
+	numCounts := len(splits)
+
+	// If more than one file given, also calculate totals
+	var totals []int
+	if len(files) > 1 {
+		totals = make([]int, numCounts)
+	} else {
+		totals = nil
+	}
+
+	// Process files sequentially
+	for _, name := range files {
+		file := openFile(name)
+		var totalsPtr *[]int
+		if totals != nil {
+			totalsPtr = &totals
+		}
+		processFile(file, name, splits, totalsPtr)
+	}
+
+	// If we were keeping totals, print them now
+	if totals != nil {
+		printCounts(totals, "total\n", false)
+	}
+}
+
+func main() {
+	// Read command-line args
+	var config Config
+	buildConfig(&config)
+
+	// If --version was passed, print version and exit
+	if config.version {
+		fmt.Println(version)
+		return
+	}
+
+	// Determine which counters to use
+	var splits []bufio.SplitFunc
+	buildSplits(&config, &splits)
+
+	// All set, let's go
+	processFiles(config.files, splits)
 }

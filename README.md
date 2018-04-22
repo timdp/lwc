@@ -55,7 +55,9 @@ slow-command | lwc --bytes
 
 ## TODO
 
-- Accept file paths in addition to stdin
+- Support `--help`
+- Support `--max-line-length`
+- Support `--files0-from`
 - Add tests
 
 ## Author
