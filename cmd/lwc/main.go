@@ -77,7 +77,7 @@ func openFile(name string) *os.File {
 	return file
 }
 
-func printCounts(counts []int, label string, cr bool) {
+func printCounts(counts []uint, label string, cr bool) {
 	var sb strings.Builder
 	if cr {
 		sb.WriteByte(CARRIAGE_RETURN)
@@ -109,10 +109,10 @@ func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int
 	}
 }
 
-func collectCounts(name string, numCounts int, totals *[]int, update chan int, wg *sync.WaitGroup) {
+func collectCounts(name string, numCounts int, totals *[]uint, update chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	counts := make([]int, numCounts)
+	counts := make([]uint, numCounts)
 	// Print zeroes straightaway in case file is empty
 	printCounts(counts, name, false)
 
@@ -147,7 +147,7 @@ func pipeSource(file *os.File, pws []*io.PipeWriter) {
 	}
 }
 
-func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]int) {
+func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint) {
 	numCounts := len(splits)
 
 	// For each counter, set up a pipe for stdin
@@ -192,9 +192,9 @@ func processFiles(files []string, splits []bufio.SplitFunc) {
 	numCounts := len(splits)
 
 	// If more than one file given, also calculate totals
-	var totals []int
+	var totals []uint
 	if len(files) > 1 {
-		totals = make([]int, numCounts)
+		totals = make([]uint, numCounts)
 	} else {
 		totals = nil
 	}
@@ -202,7 +202,7 @@ func processFiles(files []string, splits []bufio.SplitFunc) {
 	// Process files sequentially
 	for _, name := range files {
 		file := openFile(name)
-		var totalsPtr *[]int
+		var totalsPtr *[]uint
 		if totals != nil {
 			totalsPtr = &totals
 		}
