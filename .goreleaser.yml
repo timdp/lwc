@@ -1,3 +1,8 @@
+project_name: lwc
+archive:
+  name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+checksum:
+  name_template: "{{ .ProjectName }}-checksums.txt"
 builds:
   - main: cmd/lwc/main.go
     binary: lwc
