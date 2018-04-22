@@ -57,7 +57,7 @@ func buildSplits(opts Opts) []bufio.SplitFunc {
 	return splits
 }
 
-func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int, i int, wg sync.WaitGroup) {
+func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int, i int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(split)
@@ -72,7 +72,7 @@ func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int
 	}
 }
 
-func printCounts(numCounts int, update chan int, wg sync.WaitGroup) {
+func printCounts(numCounts int, update chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	counts := make([]int, numCounts)
 	out := make([]string, numCounts)
@@ -92,7 +92,7 @@ func printCounts(numCounts int, update chan int, wg sync.WaitGroup) {
 	}
 }
 
-func pipeStdin(pws []*io.PipeWriter, wg sync.WaitGroup) {
+func pipeStdin(pws []*io.PipeWriter, wg *sync.WaitGroup) {
 	defer wg.Done()
 	numCounts := len(pws)
 	writers := make([]io.Writer, numCounts)
@@ -129,15 +129,15 @@ func main() {
 	wg.Add(numCounts + 2)
 
 	// Start listening for updates to counters
-	go printCounts(numCounts, update, wg)
+	go printCounts(numCounts, update, &wg)
 
 	// Start reading from pipes
 	for i, split := range splits {
-		go consumeReader(prs[i], split, update, i, wg)
+		go consumeReader(prs[i], split, update, i, &wg)
 	}
 
 	// Start writing to pipes
-	go pipeStdin(pws, wg)
+	go pipeStdin(pws, &wg)
 
 	// Wait for goroutines to complete
 	wg.Wait()
