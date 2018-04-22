@@ -7,6 +7,12 @@ A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki
 **This is the Go version of lwc. You may also be interested in the
 [Node.js version](https://github.com/timdp/lwc-nodejs).**
 
+## Installation
+
+```bash
+go get -u github.com/timdp/lwc-golang/cmd/lwc
+```
+
 ## Usage
 
 ```

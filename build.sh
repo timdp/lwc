@@ -15,7 +15,7 @@ for tgt in "${TARGETS[@]}"; do
   set -- $tgt
   out="bin/lwc-$1-$2$3"
   echo "Building $out ..."
-  env GOOS=$1 GOARCH=$2 go build -ldflags '-s -w' -o "$out"
+  env GOOS=$1 GOARCH=$2 go build -ldflags '-s -w' -o "$out" ./cmd/lwc
 done
 
 echo Done.
