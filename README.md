@@ -1,5 +1,7 @@
 # lwc
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/timdp/lwc-golang)](https://goreportcard.com/report/github.com/timdp/lwc-golang) [![Release](https://img.shields.io/github/release/timdp/lwc-golang.svg)](https://github.com/timdp/lwc-golang/releases/latest)
+
 A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki/Wc_(Unix)).
 
 ![](demo.gif)
