@@ -12,8 +12,8 @@ A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki
 ## Installation
 
 You can get a prebuilt binary for every major platform from the
-[Releases page](https://github.com/timdp/lwc-golang/releases). Just put it
-under your `PATH` and you're good to go.
+[Releases page](https://github.com/timdp/lwc-golang/releases). Just extract it
+somewhere under your `PATH` and you're good to go.
 
 Alternatively, use `go get` to build from source:
 
