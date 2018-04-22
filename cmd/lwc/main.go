@@ -19,6 +19,7 @@ type Config struct {
 	files      []string
 }
 
+const COUNT_FORMAT string = "%8d"
 const CARRIAGE_RETURN byte = 13
 const SPACE byte = 32
 
@@ -81,10 +82,10 @@ func printCounts(counts []int, label string, cr bool) {
 	if cr {
 		sb.WriteByte(CARRIAGE_RETURN)
 	}
-	sb.WriteString(fmt.Sprintf("%8d", counts[0]))
+	sb.WriteString(fmt.Sprintf(COUNT_FORMAT, counts[0]))
 	for i := 1; i < len(counts); i++ {
 		sb.WriteByte(SPACE)
-		sb.WriteString(fmt.Sprintf("%8d", counts[i]))
+		sb.WriteString(fmt.Sprintf(COUNT_FORMAT, counts[i]))
 	}
 	if label != "" {
 		sb.WriteByte(SPACE)
