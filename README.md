@@ -1,6 +1,6 @@
 # lwc
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/timdp/lwc-golang)](https://goreportcard.com/report/github.com/timdp/lwc-golang) [![Release](https://img.shields.io/github/release/timdp/lwc-golang.svg)](https://github.com/timdp/lwc-golang/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/timdp/lwc)](https://goreportcard.com/report/github.com/timdp/lwc) [![Release](https://img.shields.io/github/release/timdp/lwc.svg)](https://github.com/timdp/lwc/releases/latest)
 
 A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki/Wc_(Unix)).
 
@@ -9,13 +9,13 @@ A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki
 ## Installation
 
 You can get a prebuilt binary for every major platform from the
-[Releases page](https://github.com/timdp/lwc-golang/releases). Just extract it
+[Releases page](https://github.com/timdp/lwc/releases). Just extract it
 somewhere under your `PATH` and you're good to go.
 
 Alternatively, use `go get` to build from source:
 
 ```bash
-go get -u github.com/timdp/lwc-golang/cmd/lwc
+go get -u github.com/timdp/lwc/cmd/lwc
 ```
 
 ## Usage
