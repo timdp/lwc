@@ -6,9 +6,6 @@ A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki
 
 ![](demo.gif)
 
-**This is the Go version of lwc. You may also be interested in the
-[Node.js version](https://github.com/timdp/lwc-nodejs).**
-
 ## Installation
 
 You can get a prebuilt binary for every major platform from the
@@ -59,6 +56,12 @@ slow-command | lwc --bytes
 - Support `--max-line-length`
 - Support `--files0-from`
 - Add tests
+
+## JavaScript Version
+
+This utility briefly existed as a
+[Node.js package](https://github.com/timdp/lwc-nodejs). I'm keeping the code
+around for educational purposes, but I will no longer be maintaining it.
 
 ## Author
 
