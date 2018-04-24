@@ -19,7 +19,7 @@ const COUNT_FORMAT string = "%8d"
 const CARRIAGE_RETURN byte = 13
 const SPACE byte = 32
 
-type ScanFunc func(*bufio.Scanner, *uint64)
+type ScanFunc func(*bufio.Scanner, *uint64, *uint64)
 
 type Config struct {
 	countLines    bool
@@ -63,7 +63,7 @@ func buildConfig() Config {
 	return config
 }
 
-func scanMaxLength(scanner *bufio.Scanner, count *uint64) {
+func scanMaxLength(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	var max uint64
 	var length uint64
 	for scanner.Scan() {
@@ -71,13 +71,15 @@ func scanMaxLength(scanner *bufio.Scanner, count *uint64) {
 		if length > max {
 			max = length
 			atomic.StoreUint64(count, max)
+			atomic.AddUint64(total, max)
 		}
 	}
 }
 
-func scanCount(scanner *bufio.Scanner, count *uint64) {
+func scanCount(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	for scanner.Scan() {
 		atomic.AddUint64(count, 1)
+		atomic.AddUint64(total, 1)
 	}
 }
 
@@ -148,11 +150,11 @@ func pollCounts(name string, counts *[]uint64, interval time.Duration, done chan
 	}
 }
 
-func consumeReader(reader *io.PipeReader, processor Processor, count *uint64, wg *sync.WaitGroup) {
+func consumeReader(reader *io.PipeReader, processor Processor, count *uint64, total *uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(processor.split)
-	processor.scan(scanner, count)
+	processor.scan(scanner, count, total)
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
@@ -197,7 +199,7 @@ func processFile(file *os.File, name string, processors []Processor, totals *[]u
 
 	// Start reading from pipes
 	for index, processor := range processors {
-		go consumeReader(prs[index], processor, &counts[index], &wg)
+		go consumeReader(prs[index], processor, &counts[index], &(*totals)[index], &wg)
 	}
 
 	// Write to pipes
