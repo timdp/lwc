@@ -19,6 +19,12 @@ type Config struct {
 	files      []string
 }
 
+type Update struct {
+	channel int
+	count   uint
+	done    bool
+}
+
 const COUNT_FORMAT string = "%8d"
 const CARRIAGE_RETURN byte = 13
 const SPACE byte = 32
@@ -94,22 +100,24 @@ func printCounts(counts []uint, label string, cr bool) {
 	os.Stdout.WriteString(sb.String())
 }
 
-func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, update chan int, i int, wg *sync.WaitGroup) {
+func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, updates chan Update, index int, wg *sync.WaitGroup) {
 	defer wg.Done()
+	var count uint
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(split)
 	for scanner.Scan() {
 		// fmt.Printf("%v: %v\n", i, scanner.Text())
-		update <- i
+		count++
+		updates <- Update{index, count, false}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	} else {
-		update <- -1
+		updates <- Update{index, count, true}
 	}
 }
 
-func collectCounts(name string, numCounts int, totals *[]uint, update chan int, wg *sync.WaitGroup) {
+func collectCounts(name string, numCounts int, totals *[]uint, updates chan Update, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	counts := make([]uint, numCounts)
@@ -118,18 +126,14 @@ func collectCounts(name string, numCounts int, totals *[]uint, update chan int, 
 
 	completed := 0
 	for completed < numCounts {
-		index := <-update
-		if index < 0 {
-			// Received -1, so done processing
+		update := <-updates
+		counts[update.channel] = update.count
+		if totals != nil {
+			(*totals)[update.channel] = update.count
+		}
+		printCounts(counts, name, true)
+		if update.done {
 			completed++
-		} else {
-			// Received index, so increment corresponding counter(s)
-			counts[index]++
-			if totals != nil {
-				(*totals)[index]++
-			}
-			// Go to start of line and print updated counts
-			printCounts(counts, name, true)
 		}
 	}
 }
@@ -150,7 +154,7 @@ func pipeSource(file *os.File, pws []*io.PipeWriter) {
 func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint) {
 	numCounts := len(splits)
 
-	// For each counter, set up a pipe for stdin
+	// For each counter, set up a pipe
 	prs := make([]*io.PipeReader, numCounts)
 	pws := make([]*io.PipeWriter, numCounts)
 	for i := 0; i < numCounts; i++ {
@@ -158,18 +162,18 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 	}
 
 	// Set up channel where counters will send updates
-	update := make(chan int)
+	updates := make(chan Update)
 
 	// Set up WaitGroup for our goroutines
 	var wg sync.WaitGroup
 	wg.Add(numCounts + 1)
 
 	// Start listening for updates to counters
-	go collectCounts(name, numCounts, totals, update, &wg)
+	go collectCounts(name, numCounts, totals, updates, &wg)
 
 	// Start reading from pipes
-	for i, split := range splits {
-		go consumeReader(prs[i], split, update, i, &wg)
+	for index, split := range splits {
+		go consumeReader(prs[index], split, updates, index, &wg)
 	}
 
 	// Write to pipes
