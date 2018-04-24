@@ -40,7 +40,8 @@ type Processor struct {
 
 var version = "master"
 
-func buildConfig(config *Config) {
+func buildConfig() Config {
+	var config Config
 	intervalMs := DEFAULT_INTERVAL
 	getopt.FlagLong(&config.countLines, "lines", 'l', "print the newline counts")
 	getopt.FlagLong(&config.countWords, "words", 'w', "print the word counts")
@@ -59,6 +60,7 @@ func buildConfig(config *Config) {
 		config.countWords = true
 		config.countBytes = true
 	}
+	return config
 }
 
 func scanMaxLength(scanner *bufio.Scanner, count *uint64) {
@@ -79,22 +81,30 @@ func scanCount(scanner *bufio.Scanner, count *uint64) {
 	}
 }
 
-func buildProcessors(config *Config, processors *[]Processor) {
+func buildProcessors(config *Config) []Processor {
+	var temp [5]Processor
+	i := 0
 	if config.countLines {
-		*processors = append(*processors, Processor{bufio.ScanLines, scanCount})
+		temp[i] = Processor{bufio.ScanLines, scanCount}
+		i++
 	}
 	if config.countWords {
-		*processors = append(*processors, Processor{bufio.ScanWords, scanCount})
+		temp[i] = Processor{bufio.ScanWords, scanCount}
+		i++
 	}
 	if config.countChars {
-		*processors = append(*processors, Processor{bufio.ScanRunes, scanCount})
+		temp[i] = Processor{bufio.ScanRunes, scanCount}
+		i++
 	}
 	if config.countBytes {
-		*processors = append(*processors, Processor{bufio.ScanBytes, scanCount})
+		temp[i] = Processor{bufio.ScanBytes, scanCount}
+		i++
 	}
 	if config.maxLineLength {
-		*processors = append(*processors, Processor{bufio.ScanLines, scanMaxLength})
+		temp[i] = Processor{bufio.ScanLines, scanMaxLength}
+		i++
 	}
+	return temp[0:i]
 }
 
 func openFile(name string) *os.File {
@@ -239,25 +249,18 @@ func processFiles(config *Config, processors []Processor) {
 
 func main() {
 	// Read command-line args
-	var config Config
-	buildConfig(&config)
+	config := buildConfig()
 
-	// If --version was passed, print version and exit
-	if config.version {
+	switch {
+	case config.version:
+		// Print version and exit
 		fmt.Println(version)
-		return
-	}
-
-	// If --help was passed, print help and exit
-	if config.help {
+	case config.help:
+		// Print usage and exit
 		getopt.PrintUsage(os.Stdout)
-		return
+	default:
+		// Process input
+		processors := buildProcessors(&config)
+		processFiles(&config, processors)
 	}
-
-	// Determine which processors to use
-	var processors []Processor
-	buildProcessors(&config, &processors)
-
-	// All set, let's go
-	processFiles(&config, processors)
 }
