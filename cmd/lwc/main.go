@@ -10,43 +10,41 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/pborman/getopt/v2"
 )
+
+const DEFAULT_INTERVAL int = 100
+const COUNT_FORMAT string = "%8d"
+const CARRIAGE_RETURN byte = 13
+const SPACE byte = 32
 
 type Config struct {
 	countLines bool
 	countWords bool
 	countChars bool
 	countBytes bool
+	interval   time.Duration
+	help       bool
 	version    bool
 	files      []string
 }
 
-const COUNT_FORMAT string = "%8d"
-const UPDATE_INTERVAL time.Duration = 50 * time.Millisecond
-const CARRIAGE_RETURN byte = 13
-const SPACE byte = 32
-
 var version = "master"
 
 func buildConfig(config *Config) {
-	for _, arg := range os.Args[1:] {
-		switch {
-		case arg == "-l" || arg == "--lines":
-			config.countLines = true
-		case arg == "-w" || arg == "--words":
-			config.countWords = true
-		case arg == "-m" || arg == "--chars":
-			config.countChars = true
-		case arg == "-c" || arg == "--bytes":
-			config.countBytes = true
-		case arg == "--version":
-			config.version = true
-		case arg != "-" && arg[0] == '-':
-			log.Fatalf("Invalid option: %s", arg)
-		default:
-			config.files = append(config.files, arg)
-		}
-	}
+	intervalMs := DEFAULT_INTERVAL
+	getopt.FlagLong(&config.countLines, "lines", 'l', "print the newline counts")
+	getopt.FlagLong(&config.countWords, "words", 'w', "print the word counts")
+	getopt.FlagLong(&config.countChars, "chars", 'm', "print the character counts")
+	getopt.FlagLong(&config.countBytes, "bytes", 'c', "print the byte counts")
+	getopt.FlagLong(&intervalMs, "interval", 'i',
+		fmt.Sprintf("set update interval in ms (default %d ms)", DEFAULT_INTERVAL))
+	getopt.FlagLong(&config.help, "help", 'h', "display this help and exit")
+	getopt.FlagLong(&config.version, "version", 'V', "output version information and exit")
+	getopt.Parse()
+	config.interval = time.Duration(intervalMs * 1e6)
+	config.files = getopt.Args()
 	if !(config.countLines || config.countWords || config.countChars || config.countBytes) {
 		config.countLines = true
 		config.countWords = true
@@ -97,6 +95,19 @@ func printCounts(counts *[]uint64, label string, cr bool) {
 	os.Stdout.WriteString(sb.String())
 }
 
+func pollCounts(name string, counts *[]uint64, interval time.Duration, done chan bool) {
+	tick := time.NewTicker(interval)
+	defer tick.Stop()
+	for {
+		select {
+		case <-tick.C:
+			printCounts(counts, name, true)
+		case <-done:
+			break
+		}
+	}
+}
+
 func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, count *uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(reader)
@@ -123,7 +134,7 @@ func pipeSource(file *os.File, pws []*io.PipeWriter) {
 	}
 }
 
-func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint64) {
+func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint64, interval time.Duration) {
 	numCounts := len(splits)
 
 	// Create counters
@@ -140,18 +151,8 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 	}
 
 	// Update stdout at fixed intervals
-	tick := time.NewTicker(UPDATE_INTERVAL)
 	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-tick.C:
-				printCounts(&counts, name, true)
-			case <-done:
-				break
-			}
-		}
-	}()
+	go pollCounts(name, &counts, interval, done)
 
 	// Set up WaitGroup for our goroutines
 	var wg sync.WaitGroup
@@ -168,19 +169,18 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 	// Wait for goroutines to complete
 	wg.Wait()
 
-	// Stop ticker
+	// Stop polling
 	done <- true
-	tick.Stop()
 
 	// Write final counts
 	printCounts(&counts, name, true)
 	fmt.Println()
 }
 
-func processFiles(files []string, splits []bufio.SplitFunc) {
+func processFiles(config *Config, splits []bufio.SplitFunc) {
 	// If no files given, process stdin
-	if len(files) == 0 {
-		processFile(os.Stdin, "", splits, nil)
+	if len(config.files) == 0 {
+		processFile(os.Stdin, "", splits, nil, config.interval)
 		return
 	}
 
@@ -188,20 +188,20 @@ func processFiles(files []string, splits []bufio.SplitFunc) {
 
 	// If more than one file given, also calculate totals
 	var totals []uint64
-	if len(files) > 1 {
+	if len(config.files) > 1 {
 		totals = make([]uint64, numCounts)
 	} else {
 		totals = nil
 	}
 
 	// Process files sequentially
-	for _, name := range files {
+	for _, name := range config.files {
 		file := openFile(name)
 		var totalsPtr *[]uint64
 		if totals != nil {
 			totalsPtr = &totals
 		}
-		processFile(file, name, splits, totalsPtr)
+		processFile(file, name, splits, totalsPtr, config.interval)
 	}
 
 	// If we were keeping totals, print them now
@@ -221,10 +221,16 @@ func main() {
 		return
 	}
 
+	// If --help was passed, print help and exit
+	if config.help {
+		getopt.PrintUsage(os.Stdout)
+		return
+	}
+
 	// Determine which counters to use
 	var splits []bufio.SplitFunc
 	buildSplits(&config, &splits)
 
 	// All set, let's go
-	processFiles(config.files, splits)
+	processFiles(&config, splits)
 }

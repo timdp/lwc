@@ -35,6 +35,12 @@ currently supported:
 - `--words` or `-w`
 - `--chars` or `-m`
 - `--bytes` or `-c`
+- `--help`
+- `--version`
+
+In addition, the output update interval can be configured by passing either
+`--interval=TIME` or `-i TIME`, where `TIME` is a duration in milliseconds.
+The default update interval is 100 ms.
 
 ## Examples
 
@@ -52,7 +58,6 @@ slow-command | lwc --bytes
 
 ## TODO
 
-- Support `--help`
 - Support `--max-line-length`
 - Support `--files0-from`
 - Add tests
