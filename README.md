@@ -35,6 +35,7 @@ currently supported:
 - `--words` or `-w`
 - `--chars` or `-m`
 - `--bytes` or `-c`
+- `--max-line-length` or `-L`
 - `--help`
 - `--version`
 
@@ -58,7 +59,6 @@ slow-command | lwc --bytes
 
 ## TODO
 
-- Support `--max-line-length`
 - Support `--files0-from`
 - Add tests
 

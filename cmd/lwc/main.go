@@ -19,15 +19,23 @@ const COUNT_FORMAT string = "%8d"
 const CARRIAGE_RETURN byte = 13
 const SPACE byte = 32
 
+type ScanFunc func(*bufio.Scanner, *uint64)
+
 type Config struct {
-	countLines bool
-	countWords bool
-	countChars bool
-	countBytes bool
-	interval   time.Duration
-	help       bool
-	version    bool
-	files      []string
+	countLines    bool
+	countWords    bool
+	countChars    bool
+	countBytes    bool
+	maxLineLength bool
+	interval      time.Duration
+	help          bool
+	version       bool
+	files         []string
+}
+
+type Processor struct {
+	split bufio.SplitFunc
+	scan  ScanFunc
 }
 
 var version = "master"
@@ -38,6 +46,7 @@ func buildConfig(config *Config) {
 	getopt.FlagLong(&config.countWords, "words", 'w', "print the word counts")
 	getopt.FlagLong(&config.countChars, "chars", 'm', "print the character counts")
 	getopt.FlagLong(&config.countBytes, "bytes", 'c', "print the byte counts")
+	getopt.FlagLong(&config.maxLineLength, "max-line-length", 'L', "print the maximum display width")
 	getopt.FlagLong(&intervalMs, "interval", 'i',
 		fmt.Sprintf("set update interval in ms (default %d ms)", DEFAULT_INTERVAL))
 	getopt.FlagLong(&config.help, "help", 'h', "display this help and exit")
@@ -52,18 +61,39 @@ func buildConfig(config *Config) {
 	}
 }
 
-func buildSplits(config *Config, splits *[]bufio.SplitFunc) {
+func scanMaxLength(scanner *bufio.Scanner, count *uint64) {
+	var max uint64
+	var length uint64
+	for scanner.Scan() {
+		length = uint64(len(scanner.Text()))
+		if length > max {
+			max = length
+			atomic.StoreUint64(count, max)
+		}
+	}
+}
+
+func scanCount(scanner *bufio.Scanner, count *uint64) {
+	for scanner.Scan() {
+		atomic.AddUint64(count, 1)
+	}
+}
+
+func buildProcessors(config *Config, processors *[]Processor) {
 	if config.countLines {
-		*splits = append(*splits, bufio.ScanLines)
+		*processors = append(*processors, Processor{bufio.ScanLines, scanCount})
 	}
 	if config.countWords {
-		*splits = append(*splits, bufio.ScanWords)
+		*processors = append(*processors, Processor{bufio.ScanWords, scanCount})
 	}
 	if config.countChars {
-		*splits = append(*splits, bufio.ScanRunes)
+		*processors = append(*processors, Processor{bufio.ScanRunes, scanCount})
 	}
 	if config.countBytes {
-		*splits = append(*splits, bufio.ScanBytes)
+		*processors = append(*processors, Processor{bufio.ScanBytes, scanCount})
+	}
+	if config.maxLineLength {
+		*processors = append(*processors, Processor{bufio.ScanLines, scanMaxLength})
 	}
 }
 
@@ -108,14 +138,11 @@ func pollCounts(name string, counts *[]uint64, interval time.Duration, done chan
 	}
 }
 
-func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, count *uint64, wg *sync.WaitGroup) {
+func consumeReader(reader *io.PipeReader, processor Processor, count *uint64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(reader)
-	scanner.Split(split)
-	for scanner.Scan() {
-		// fmt.Printf("%v: %v\n", i, scanner.Text())
-		atomic.AddUint64(count, 1)
-	}
+	scanner.Split(processor.split)
+	processor.scan(scanner, count)
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
@@ -134,8 +161,8 @@ func pipeSource(file *os.File, pws []*io.PipeWriter) {
 	}
 }
 
-func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint64, interval time.Duration) {
-	numCounts := len(splits)
+func processFile(file *os.File, name string, processors []Processor, totals *[]uint64, interval time.Duration) {
+	numCounts := len(processors)
 
 	// Create counters
 	counts := make([]uint64, numCounts)
@@ -159,8 +186,8 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 	wg.Add(numCounts)
 
 	// Start reading from pipes
-	for index, split := range splits {
-		go consumeReader(prs[index], split, &counts[index], &wg)
+	for index, processor := range processors {
+		go consumeReader(prs[index], processor, &counts[index], &wg)
 	}
 
 	// Write to pipes
@@ -177,14 +204,14 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 	fmt.Println()
 }
 
-func processFiles(config *Config, splits []bufio.SplitFunc) {
+func processFiles(config *Config, processors []Processor) {
 	// If no files given, process stdin
 	if len(config.files) == 0 {
-		processFile(os.Stdin, "", splits, nil, config.interval)
+		processFile(os.Stdin, "", processors, nil, config.interval)
 		return
 	}
 
-	numCounts := len(splits)
+	numCounts := len(processors)
 
 	// If more than one file given, also calculate totals
 	var totals []uint64
@@ -201,7 +228,7 @@ func processFiles(config *Config, splits []bufio.SplitFunc) {
 		if totals != nil {
 			totalsPtr = &totals
 		}
-		processFile(file, name, splits, totalsPtr, config.interval)
+		processFile(file, name, processors, totalsPtr, config.interval)
 	}
 
 	// If we were keeping totals, print them now
@@ -227,10 +254,10 @@ func main() {
 		return
 	}
 
-	// Determine which counters to use
-	var splits []bufio.SplitFunc
-	buildSplits(&config, &splits)
+	// Determine which processors to use
+	var processors []Processor
+	buildProcessors(&config, &processors)
 
 	// All set, let's go
-	processFiles(&config, splits)
+	processFiles(&config, processors)
 }
