@@ -239,26 +239,21 @@ func processFiles(config *Config, processors []Processor) {
 	numCounts := len(processors)
 
 	// If more than one file given, also calculate totals
-	var totals []uint64
+	var totals *[]uint64
 	if len(config.files) > 1 {
-		totals = make([]uint64, numCounts)
-	} else {
-		totals = nil
+		totalsRaw := make([]uint64, numCounts)
+		totals = &totalsRaw
 	}
 
 	// Process files sequentially
 	for _, name := range config.files {
 		file := openFile(name)
-		var totalsPtr *[]uint64
-		if totals != nil {
-			totalsPtr = &totals
-		}
-		processFile(file, name, processors, totalsPtr, config.interval)
+		processFile(file, name, processors, totals, config.interval)
 	}
 
 	// If we were keeping totals, print them now
 	if totals != nil {
-		printCounts(&totals, "total\n", false)
+		printCounts(totals, "total\n", false)
 	}
 }
 
