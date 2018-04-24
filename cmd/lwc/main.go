@@ -64,14 +64,21 @@ func buildConfig() Config {
 }
 
 func scanMaxLength(scanner *bufio.Scanner, count *uint64, total *uint64) {
-	var max uint64
+	var localMax uint64
+	var globalMax uint64
+	if total != nil {
+		globalMax = atomic.LoadUint64(total)
+	}
 	var length uint64
 	for scanner.Scan() {
 		length = uint64(len(scanner.Text()))
-		if length > max {
-			max = length
-			atomic.StoreUint64(count, max)
-			atomic.AddUint64(total, max)
+		if length > localMax {
+			localMax = length
+			atomic.StoreUint64(count, localMax)
+		}
+		if total != nil && length > globalMax {
+			globalMax = length
+			atomic.StoreUint64(total, globalMax)
 		}
 	}
 }
@@ -79,7 +86,9 @@ func scanMaxLength(scanner *bufio.Scanner, count *uint64, total *uint64) {
 func scanCount(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	for scanner.Scan() {
 		atomic.AddUint64(count, 1)
-		atomic.AddUint64(total, 1)
+		if total != nil {
+			atomic.AddUint64(total, 1)
+		}
 	}
 }
 
@@ -199,7 +208,11 @@ func processFile(file *os.File, name string, processors []Processor, totals *[]u
 
 	// Start reading from pipes
 	for index, processor := range processors {
-		go consumeReader(prs[index], processor, &counts[index], &(*totals)[index], &wg)
+		var totalPtr *uint64
+		if totals != nil {
+			totalPtr = &(*totals)[index]
+		}
+		go consumeReader(prs[index], processor, &counts[index], totalPtr, &wg)
 	}
 
 	// Write to pipes
