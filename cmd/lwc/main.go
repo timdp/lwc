@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 type Config struct {
@@ -21,11 +23,12 @@ type Config struct {
 
 type Update struct {
 	channel int
-	count   uint
+	count   uint64
 	done    bool
 }
 
 const COUNT_FORMAT string = "%8d"
+const UPDATE_INTERVAL time.Duration = 50 * time.Millisecond
 const CARRIAGE_RETURN byte = 13
 const SPACE byte = 32
 
@@ -83,7 +86,7 @@ func openFile(name string) *os.File {
 	return file
 }
 
-func printCounts(counts []uint, label string, cr bool) {
+func printCounts(counts []uint64, label string, cr bool) {
 	var sb strings.Builder
 	if cr {
 		sb.WriteByte(CARRIAGE_RETURN)
@@ -100,27 +103,31 @@ func printCounts(counts []uint, label string, cr bool) {
 	os.Stdout.WriteString(sb.String())
 }
 
-func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, updates chan Update, index int, wg *sync.WaitGroup) {
+func consumeReader(reader *io.PipeReader, split bufio.SplitFunc, in chan bool, out chan Update, index int, wg *sync.WaitGroup) {
 	defer wg.Done()
-	var count uint
+	var count uint64
+	go func() {
+		for <-in {
+			out <- Update{index, atomic.LoadUint64(&count), false}
+		}
+	}()
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(split)
 	for scanner.Scan() {
 		// fmt.Printf("%v: %v\n", i, scanner.Text())
-		count++
-		updates <- Update{index, count, false}
+		atomic.AddUint64(&count, 1)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	} else {
-		updates <- Update{index, count, true}
+		out <- Update{index, atomic.LoadUint64(&count), true}
 	}
 }
 
-func collectCounts(name string, numCounts int, totals *[]uint, updates chan Update, wg *sync.WaitGroup) {
+func collectCounts(name string, numCounts int, totals *[]uint64, updates chan Update, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	counts := make([]uint, numCounts)
+	counts := make([]uint64, numCounts)
 	// Print zeroes straightaway in case file is empty
 	printCounts(counts, name, false)
 
@@ -151,7 +158,7 @@ func pipeSource(file *os.File, pws []*io.PipeWriter) {
 	}
 }
 
-func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint) {
+func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[]uint64) {
 	numCounts := len(splits)
 
 	// For each counter, set up a pipe
@@ -161,19 +168,42 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 		prs[i], pws[i] = io.Pipe()
 	}
 
-	// Set up channel where counters will send updates
-	updates := make(chan Update)
+	// Set up channels
+	ins := make([]chan bool, numCounts)
+	for i := range ins {
+		ins[i] = make(chan bool)
+	}
+	out := make(chan Update)
 
 	// Set up WaitGroup for our goroutines
 	var wg sync.WaitGroup
 	wg.Add(numCounts + 1)
 
+	// Request an update at fixed intervals
+	tick := time.NewTicker(UPDATE_INTERVAL)
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-tick.C:
+				for _, in := range ins {
+					in <- true
+				}
+			case <-done:
+				for _, in := range ins {
+					close(in)
+				}
+				break
+			}
+		}
+	}()
+
 	// Start listening for updates to counters
-	go collectCounts(name, numCounts, totals, updates, &wg)
+	go collectCounts(name, numCounts, totals, out, &wg)
 
 	// Start reading from pipes
 	for index, split := range splits {
-		go consumeReader(prs[index], split, updates, index, &wg)
+		go consumeReader(prs[index], split, ins[index], out, index, &wg)
 	}
 
 	// Write to pipes
@@ -181,6 +211,9 @@ func processFile(file *os.File, name string, splits []bufio.SplitFunc, totals *[
 
 	// Wait for goroutines to complete
 	wg.Wait()
+
+	done <- true
+	tick.Stop()
 
 	// Write final newline
 	fmt.Println()
@@ -196,9 +229,9 @@ func processFiles(files []string, splits []bufio.SplitFunc) {
 	numCounts := len(splits)
 
 	// If more than one file given, also calculate totals
-	var totals []uint
+	var totals []uint64
 	if len(files) > 1 {
-		totals = make([]uint, numCounts)
+		totals = make([]uint64, numCounts)
 	} else {
 		totals = nil
 	}
@@ -206,7 +239,7 @@ func processFiles(files []string, splits []bufio.SplitFunc) {
 	// Process files sequentially
 	for _, name := range files {
 		file := openFile(name)
-		var totalsPtr *[]uint
+		var totalsPtr *[]uint64
 		if totals != nil {
 			totalsPtr = &totals
 		}
