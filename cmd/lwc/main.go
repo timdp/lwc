@@ -17,6 +17,7 @@ import (
 const DEFAULT_INTERVAL int = 100
 const COUNT_FORMAT string = "%8d"
 const CARRIAGE_RETURN byte = 13
+const LINE_FEED byte = 10
 const SPACE byte = 32
 
 type ScanFunc func(*bufio.Scanner, *uint64, *uint64)
@@ -129,7 +130,7 @@ func openFile(name string) *os.File {
 	return file
 }
 
-func printCounts(counts *[]uint64, label string, cr bool) {
+func printCounts(counts *[]uint64, label string, cr bool, lf bool) {
 	var sb strings.Builder
 	if cr {
 		sb.WriteByte(CARRIAGE_RETURN)
@@ -143,6 +144,9 @@ func printCounts(counts *[]uint64, label string, cr bool) {
 		sb.WriteByte(SPACE)
 		sb.WriteString(label)
 	}
+	if lf {
+		sb.WriteByte(LINE_FEED)
+	}
 	os.Stdout.WriteString(sb.String())
 }
 
@@ -152,7 +156,7 @@ func pollCounts(name string, counts *[]uint64, interval time.Duration, done chan
 	for {
 		select {
 		case <-tick.C:
-			printCounts(counts, name, true)
+			printCounts(counts, name, true, false)
 		case <-done:
 			break
 		}
@@ -189,7 +193,7 @@ func processFile(file *os.File, name string, processors []Processor, totals *[]u
 	counts := make([]uint64, numCounts)
 
 	// Write zeroes straightaway in case file is empty
-	printCounts(&counts, name, false)
+	printCounts(&counts, name, false, false)
 
 	// For each counter, set up a pipe
 	prs := make([]*io.PipeReader, numCounts)
@@ -225,8 +229,7 @@ func processFile(file *os.File, name string, processors []Processor, totals *[]u
 	done <- true
 
 	// Write final counts
-	printCounts(&counts, name, true)
-	fmt.Println()
+	printCounts(&counts, name, true, true)
 }
 
 func processFiles(config *Config, processors []Processor) {
@@ -253,7 +256,7 @@ func processFiles(config *Config, processors []Processor) {
 
 	// If we were keeping totals, print them now
 	if totals != nil {
-		printCounts(totals, "total\n", false)
+		printCounts(totals, "total\n", false, false)
 	}
 }
 
