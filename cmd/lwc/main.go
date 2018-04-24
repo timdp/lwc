@@ -264,7 +264,7 @@ func main() {
 	switch {
 	case config.version:
 		// Print version and exit
-		fmt.Println(version)
+		fmt.Printf("lwc %s\n", version)
 	case config.help:
 		// Print usage and exit
 		getopt.PrintUsage(os.Stdout)
