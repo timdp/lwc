@@ -2,11 +2,12 @@ package lwc
 
 import (
 	"fmt"
+	"os"
 )
 
 func Run(version string) {
 	// Read command-line args
-	config := BuildConfig()
+	config := BuildConfig(os.Args)
 
 	switch {
 	case config.Version:
@@ -14,7 +15,7 @@ func Run(version string) {
 		fmt.Printf("lwc %s\n", version)
 	case config.Help:
 		// Print usage and exit
-		PrintUsage()
+		config.PrintUsage()
 	default:
 		// Process input
 		processors := BuildProcessors(&config)
