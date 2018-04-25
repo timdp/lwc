@@ -19,19 +19,19 @@ type Processor struct {
 func BuildProcessors(config *Config) []Processor {
 	var temp [5]Processor
 	i := 0
-	if config.CountLines {
+	if config.Lines {
 		temp[i] = Processor{bufio.ScanLines, ScanCount}
 		i++
 	}
-	if config.CountWords {
+	if config.Words {
 		temp[i] = Processor{bufio.ScanWords, ScanCount}
 		i++
 	}
-	if config.CountChars {
+	if config.Chars {
 		temp[i] = Processor{bufio.ScanRunes, ScanCount}
 		i++
 	}
-	if config.CountBytes {
+	if config.Bytes {
 		temp[i] = Processor{bufio.ScanBytes, ScanCount}
 		i++
 	}
