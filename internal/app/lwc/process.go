@@ -57,18 +57,11 @@ func ProcessFile(file *os.File, name string, processors []Processor, totals *[]u
 	// Create counters
 	counts := make([]uint64, numCounts)
 
-	// Write zeroes straightaway in case file is empty
-	PrintCounts(&counts, name, false, false)
-
 	// For each counter, set up a pipe
 	pipes := make([]lwcio.Pipe, numCounts)
 	for i := 0; i < numCounts; i++ {
 		pipes[i] = lwcio.NewPipe()
 	}
-
-	// Update stdout at fixed intervals
-	done := make(chan bool)
-	go PollCounts(name, &counts, interval, done)
 
 	// Set up WaitGroup for our goroutines
 	var wg sync.WaitGroup
@@ -85,6 +78,13 @@ func ProcessFile(file *os.File, name string, processors []Processor, totals *[]u
 			ProcessReader(reader, processor, count, total)
 		}(pipes[index].R, processor, &counts[index], totalPtr)
 	}
+
+	// Write zeroes straightaway in case file is empty
+	PrintCounts(&counts, name, false, false)
+
+	// Update stdout at fixed intervals
+	done := make(chan bool)
+	go PollCounts(name, &counts, interval, done)
 
 	// Write to pipes
 	lwcio.MultiPipe(file, lwcio.GetPipeWriters(pipes))
