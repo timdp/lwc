@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/timdp/lwc)](https://goreportcard.com/report/github.com/timdp/lwc)
 [![Build Status](https://img.shields.io/circleci/project/github/timdp/lwc/master.svg)](https://circleci.com/gh/timdp/lwc)
+[![Coverage Status](https://img.shields.io/coveralls/timdp/lwc/master.svg)](https://coveralls.io/r/timdp/lwc)
 [![Release](https://img.shields.io/github/release/timdp/lwc.svg)](https://github.com/timdp/lwc/releases/latest)
 
 A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki/Wc_(Unix)).
