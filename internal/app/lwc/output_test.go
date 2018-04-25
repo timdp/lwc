@@ -78,11 +78,11 @@ func TestFormatCounts(t *testing.T) {
 		result := FormatCounts(&test.counts, test.label, test.cr, test.lf)
 		hasCr := strings.HasPrefix(result, "\r")
 		if test.cr != hasCr {
-			t.Errorf("Test #%d failed: expecting string %s LF", i, withWithout(test.lf))
+			t.Errorf("Test #%d failed: expecting string %s CR prefix", i, withWithout(test.cr))
 		}
 		hasLf := strings.HasSuffix(result, "\n")
 		if test.lf != hasLf {
-			t.Errorf("Test #%d failed: expecting string %s LF", i, withWithout(test.lf))
+			t.Errorf("Test #%d failed: expecting string %s LF suffix", i, withWithout(test.lf))
 		}
 		actual := tokenize(result)
 		expected := test.expected()
