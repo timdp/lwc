@@ -2,8 +2,11 @@ package lwc
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
 type configTest struct {
@@ -112,5 +115,21 @@ func TestBuildConfig(t *testing.T) {
 		if !reflect.DeepEqual(test.expected, actual) {
 			t.Errorf("Test #%d failed: expecting %#v, got %#v", i, test.expected, actual)
 		}
+	}
+}
+
+func TestNegativeUpdateIntervalError(t *testing.T) {
+	BuildConfig([]string{"lwc", "--interval", "-1"})
+	if lwcutil.LastError != "Update interval cannot be negative" {
+		t.Errorf("Expecting update interval error, got %#v", lwcutil.LastError)
+	}
+}
+
+func TestPrintUsage(t *testing.T) {
+	config := BuildConfig([]string{"lwc"})
+	config.PrintUsage()
+	out := string(lwcutil.FlushStdoutBuffer())
+	if !strings.HasPrefix(out, "Usage: lwc ") {
+		t.Errorf("Expecting usage information, got %#v", out)
 	}
 }

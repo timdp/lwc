@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
 type formatTest struct {
@@ -75,7 +77,7 @@ var formatTests = []formatTest{
 
 func TestFormatCounts(t *testing.T) {
 	for i, test := range formatTests {
-		result := FormatCounts(&test.counts, test.label, test.cr, test.lf)
+		result := FormatCounts(&test.counts, test.label, test.cr, test.lf).String()
 		hasCr := strings.HasPrefix(result, "\r")
 		if test.cr != hasCr {
 			t.Errorf("Test #%d failed: expecting string %s CR prefix", i, withWithout(test.cr))
@@ -89,5 +91,14 @@ func TestFormatCounts(t *testing.T) {
 		if !reflect.DeepEqual(expected, actual) {
 			t.Errorf("Test #%d failed: expecting %#v, got %#v", i, expected, actual)
 		}
+	}
+}
+
+func TestPrintCounts(t *testing.T) {
+	PrintCounts(&[]uint64{1, 2, 3}, "file", true, true)
+	actual := string(lwcutil.FlushStdoutBuffer())
+	expected := "\r       1        2        3 file\n"
+	if expected != actual {
+		t.Errorf("Expecting %#v, got %#v", expected, actual)
 	}
 }

@@ -1,10 +1,11 @@
 package lwc
 
 import (
+	"bytes"
 	"fmt"
-	"os"
-	"strings"
 	"time"
+
+	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
 const COUNT_FORMAT string = "%8d"
@@ -12,28 +13,28 @@ const CARRIAGE_RETURN byte = 13
 const LINE_FEED byte = 10
 const SPACE byte = 32
 
-func FormatCounts(counts *[]uint64, label string, cr bool, lf bool) string {
-	var sb strings.Builder
+func FormatCounts(counts *[]uint64, label string, cr bool, lf bool) *bytes.Buffer {
+	buf := new(bytes.Buffer)
 	if cr {
-		sb.WriteByte(CARRIAGE_RETURN)
+		buf.WriteByte(CARRIAGE_RETURN)
 	}
-	sb.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[0]))
+	buf.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[0]))
 	for i := 1; i < len(*counts); i++ {
-		sb.WriteByte(SPACE)
-		sb.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[i]))
+		buf.WriteByte(SPACE)
+		buf.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[i]))
 	}
 	if label != "" {
-		sb.WriteByte(SPACE)
-		sb.WriteString(label)
+		buf.WriteByte(SPACE)
+		buf.WriteString(label)
 	}
 	if lf {
-		sb.WriteByte(LINE_FEED)
+		buf.WriteByte(LINE_FEED)
 	}
-	return sb.String()
+	return buf
 }
 
 func PrintCounts(counts *[]uint64, label string, cr bool, lf bool) {
-	os.Stdout.WriteString(FormatCounts(counts, label, cr, lf))
+	lwcutil.GetStdout().Write(FormatCounts(counts, label, cr, lf).Bytes())
 }
 
 func PollCounts(name string, counts *[]uint64, interval time.Duration, done chan bool) {

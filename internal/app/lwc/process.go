@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/timdp/lwc/internal/pkg/lwcio"
+	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
 type Processor struct {
@@ -58,9 +58,9 @@ func ProcessFile(file *os.File, name string, processors []Processor, totals *[]u
 	counts := make([]uint64, numCounts)
 
 	// For each counter, set up a pipe
-	pipes := make([]lwcio.Pipe, numCounts)
+	pipes := make([]lwcutil.Pipe, numCounts)
 	for i := 0; i < numCounts; i++ {
-		pipes[i] = lwcio.NewPipe()
+		pipes[i] = lwcutil.NewPipe()
 	}
 
 	// Set up WaitGroup for our goroutines
@@ -87,7 +87,7 @@ func ProcessFile(file *os.File, name string, processors []Processor, totals *[]u
 	go PollCounts(name, &counts, interval, done)
 
 	// Write to pipes
-	lwcio.MultiPipe(file, lwcio.GetPipeWriters(pipes))
+	lwcutil.MultiPipe(file, lwcutil.GetPipeWriters(pipes))
 
 	// Wait for goroutines to complete
 	wg.Wait()
@@ -117,7 +117,7 @@ func ProcessFiles(config *Config, processors []Processor) {
 
 	// Process files sequentially
 	for _, name := range config.Files {
-		file := lwcio.OpenFile(name)
+		file := lwcutil.OpenFile(name)
 		ProcessFile(file, name, processors, totals, config.Interval)
 	}
 

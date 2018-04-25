@@ -2,11 +2,10 @@ package lwc
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	getopt "github.com/pborman/getopt/v2"
+	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
 const DEFAULT_INTERVAL int = 100
@@ -25,7 +24,7 @@ type Config struct {
 }
 
 func (c *Config) PrintUsage() {
-	c.g.PrintUsage(os.Stdout)
+	c.g.PrintUsage(lwcutil.GetStdout())
 }
 
 func BuildConfig(args []string) Config {
@@ -44,7 +43,7 @@ func BuildConfig(args []string) Config {
 	g.FlagLong(&config.Version, "version", 'V', "output version information and exit")
 	g.Parse(args)
 	if intervalMs < 0 {
-		log.Fatal("Update interval cannot be negative")
+		lwcutil.Fatal("Update interval cannot be negative")
 	}
 	config.Interval = time.Duration(intervalMs) * time.Millisecond
 	config.Files = g.Args()
