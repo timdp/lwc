@@ -61,16 +61,6 @@ Run a slow command and count the number of bytes logged:
 slow-command | lwc --bytes
 ```
 
-## Caveats
-
-- The `--lines` option is currently implemented differently from `wc`'s. Where
-  `wc` will count the number of newline characters, `lwc` will count the actual
-  number of lines. Hence, if there is no newline at the end of its input, `lwc`
-  will still count the line, while `wc` won't.
-
-- While `lwc` is pretty fast, you'll still get better performance out of `wc`.
-  Benchmarks will be added at some point, but it's currently not a priority.
-
 ## JavaScript Version
 
 This utility briefly existed as a

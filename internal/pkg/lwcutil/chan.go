@@ -28,7 +28,7 @@ func NewFilesChanFromSlice(values []string) *chan string {
 func NewFilesChanFromReader(reader io.Reader, separator byte) *chan string {
 	c := make(chan string)
 	scanner := bufio.NewScanner(reader)
-	scanner.Split(SplitOnByte(0))
+	scanner.Split(SplitOnByte(0, false))
 	go func() {
 		for scanner.Scan() {
 			name := scanner.Text()

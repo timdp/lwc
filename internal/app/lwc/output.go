@@ -9,9 +9,6 @@ import (
 )
 
 const COUNT_FORMAT string = "%8d"
-const CARRIAGE_RETURN byte = 13
-const LINE_FEED byte = 10
-const SPACE byte = 32
 
 func FormatCounts(counts *[]uint64, name string, cr bool, lf bool) *bytes.Buffer {
 	buf := new(bytes.Buffer)
