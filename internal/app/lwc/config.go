@@ -1,6 +1,7 @@
 package lwc
 
 import (
+	"bufio"
 	"fmt"
 	"time"
 
@@ -16,6 +17,7 @@ type Config struct {
 	Chars         bool
 	Bytes         bool
 	MaxLineLength bool
+	Files0From    string
 	Interval      time.Duration
 	Help          bool
 	Version       bool
@@ -27,30 +29,65 @@ func (c *Config) PrintUsage() {
 	c.g.PrintUsage(lwcutil.GetStdout())
 }
 
-func BuildConfig(args []string) Config {
+func NewConfig(args []string) *Config {
 	intervalMs := DEFAULT_INTERVAL
-	g := getopt.New()
-	var config Config
-	config.g = g
-	g.FlagLong(&config.Lines, "lines", 'l', "print the newline counts")
-	g.FlagLong(&config.Words, "words", 'w', "print the word counts")
-	g.FlagLong(&config.Chars, "chars", 'm', "print the character counts")
-	g.FlagLong(&config.Bytes, "bytes", 'c', "print the byte counts")
-	g.FlagLong(&config.MaxLineLength, "max-line-length", 'L', "print the maximum display width")
-	g.FlagLong(&intervalMs, "interval", 'i',
+	var c Config
+	c.g = getopt.New()
+	c.g.FlagLong(&c.Lines, "lines", 'l', "print the newline counts")
+	c.g.FlagLong(&c.Words, "words", 'w', "print the word counts")
+	c.g.FlagLong(&c.Chars, "chars", 'm', "print the character counts")
+	c.g.FlagLong(&c.Bytes, "bytes", 'c', "print the byte counts")
+	c.g.FlagLong(&c.MaxLineLength, "max-line-length", 'L', "print the maximum display width")
+	c.g.FlagLong(&c.Files0From, "files0-from", 0, "read input from the files specified by NUL-terminated names in file F")
+	c.g.FlagLong(&intervalMs, "interval", 'i',
 		fmt.Sprintf("set update interval in ms (default %d ms)", DEFAULT_INTERVAL))
-	g.FlagLong(&config.Help, "help", 'h', "display this help and exit")
-	g.FlagLong(&config.Version, "version", 'V', "output version information and exit")
-	g.Parse(args)
+	c.g.FlagLong(&c.Help, "help", 'h', "display this help and exit")
+	c.g.FlagLong(&c.Version, "version", 'V', "output version information and exit")
+	c.g.Parse(args)
 	if intervalMs < 0 {
 		lwcutil.Fatal("Update interval cannot be negative")
 	}
-	config.Interval = time.Duration(intervalMs) * time.Millisecond
-	config.Files = g.Args()
-	if !(config.Lines || config.Words || config.Chars || config.Bytes) {
-		config.Lines = true
-		config.Words = true
-		config.Bytes = true
+	c.Interval = time.Duration(intervalMs) * time.Millisecond
+	c.Files = c.g.Args()
+	if !(c.Lines || c.Words || c.Chars || c.Bytes || c.MaxLineLength) {
+		c.Lines = true
+		c.Words = true
+		c.Bytes = true
 	}
-	return config
+	return &c
+}
+
+func (config *Config) Processors() []Processor {
+	var temp [5]Processor
+	i := 0
+	if config.Lines {
+		temp[i] = Processor{bufio.ScanLines, ScanCount}
+		i++
+	}
+	if config.Words {
+		temp[i] = Processor{bufio.ScanWords, ScanCount}
+		i++
+	}
+	if config.Chars {
+		temp[i] = Processor{bufio.ScanRunes, ScanCount}
+		i++
+	}
+	if config.Bytes {
+		temp[i] = Processor{bufio.ScanBytes, ScanCount}
+		i++
+	}
+	if config.MaxLineLength {
+		temp[i] = Processor{bufio.ScanLines, ScanMaxLength}
+		i++
+	}
+	return temp[0:i]
+}
+
+func (config *Config) FilesChan() *chan string {
+	if config.Files0From != "" {
+		reader := lwcutil.OpenFile(config.Files0From)
+		return lwcutil.NewFilesChanFromReader(reader, byte(0))
+	} else {
+		return lwcutil.NewFilesChanFromSlice(config.Files)
+	}
 }

@@ -16,32 +16,6 @@ type Processor struct {
 	Scan  ScanFunc
 }
 
-func BuildProcessors(config *Config) []Processor {
-	var temp [5]Processor
-	i := 0
-	if config.Lines {
-		temp[i] = Processor{bufio.ScanLines, ScanCount}
-		i++
-	}
-	if config.Words {
-		temp[i] = Processor{bufio.ScanWords, ScanCount}
-		i++
-	}
-	if config.Chars {
-		temp[i] = Processor{bufio.ScanRunes, ScanCount}
-		i++
-	}
-	if config.Bytes {
-		temp[i] = Processor{bufio.ScanBytes, ScanCount}
-		i++
-	}
-	if config.MaxLineLength {
-		temp[i] = Processor{bufio.ScanLines, ScanMaxLength}
-		i++
-	}
-	return temp[0:i]
-}
-
 func ProcessReader(reader io.Reader, processor Processor, count *uint64, total *uint64) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(processor.Split)
@@ -51,7 +25,18 @@ func ProcessReader(reader io.Reader, processor Processor, count *uint64, total *
 	}
 }
 
-func ProcessFile(file *os.File, name string, processors []Processor, totals *[]uint64, interval time.Duration) {
+func OpenFile(namePtr *string) (string, *os.File) {
+	if namePtr == nil {
+		return "", os.Stdin
+	} else {
+		return *namePtr, lwcutil.OpenFile(*namePtr)
+	}
+}
+
+func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, interval time.Duration) {
+	// Open input file (can be stdin)
+	name, file := OpenFile(namePtr)
+
 	numCounts := len(processors)
 
 	// Create counters
@@ -99,26 +84,41 @@ func ProcessFile(file *os.File, name string, processors []Processor, totals *[]u
 	PrintCounts(&counts, name, true, true)
 }
 
-func ProcessFiles(config *Config, processors []Processor) {
+func ProcessFiles(config *Config) {
+	files := config.FilesChan()
+	processors := config.Processors()
+
+	name1 := <-*files
+
 	// If no files given, process stdin
-	if len(config.Files) == 0 {
-		ProcessFile(os.Stdin, "", processors, nil, config.Interval)
+	if name1 == "" {
+		ProcessFile(nil, processors, nil, config.Interval)
 		return
 	}
 
 	numCounts := len(processors)
+	var totals *[]uint64
+
+	name2 := <-*files
 
 	// If more than one file given, also calculate totals
-	var totals *[]uint64
-	if len(config.Files) > 1 {
+	if name2 != "" {
 		totalsRaw := make([]uint64, numCounts)
 		totals = &totalsRaw
 	}
 
-	// Process files sequentially
-	for _, name := range config.Files {
-		file := lwcutil.OpenFile(name)
-		ProcessFile(file, name, processors, totals, config.Interval)
+	ProcessFile(&name1, processors, totals, config.Interval)
+
+	if name2 != "" {
+		ProcessFile(&name2, processors, totals, config.Interval)
+
+		// Process files sequentially
+		for name := range *files {
+			if name == lwcutil.END_OF_FILES {
+				break
+			}
+			ProcessFile(&name, processors, totals, config.Interval)
+		}
 	}
 
 	// If we were keeping totals, print them now

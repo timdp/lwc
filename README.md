@@ -31,14 +31,15 @@ Without any options, `lwc` will count the number of lines, words, and bytes
 in standard input, and write them to standard output. Contrary to `wc`, it will
 also update standard output while it is still counting.
 
-The following [`wc` options](https://en.wikipedia.org/wiki/Wc_(Unix)) are
-currently supported:
+All the standard [`wc` options](https://en.wikipedia.org/wiki/Wc_(Unix)) are
+supported:
 
 - `--lines` or `-l`
 - `--words` or `-w`
 - `--chars` or `-m`
 - `--bytes` or `-c`
 - `--max-line-length` or `-L`
+- `--files0-from=F`
 - `--help`
 - `--version`
 
@@ -60,10 +61,15 @@ Run a slow command and count the number of bytes logged:
 slow-command | lwc --bytes
 ```
 
-## TODO
+## Caveats
 
-- Support `--files0-from`
-- Add tests
+- The `--lines` option is currently implemented differently from `wc`'s. Where
+  `wc` will count the number of newline characters, `lwc` will count the actual
+  number of lines. Hence, if there is no newline at the end of its input, `lwc`
+  will still count the line, while `wc` won't.
+
+- While `lwc` is pretty fast, you'll still get better performance out of `wc`.
+  Benchmarks will be added at some point, but it's currently not a priority.
 
 ## JavaScript Version
 

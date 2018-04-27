@@ -13,7 +13,7 @@ const CARRIAGE_RETURN byte = 13
 const LINE_FEED byte = 10
 const SPACE byte = 32
 
-func FormatCounts(counts *[]uint64, label string, cr bool, lf bool) *bytes.Buffer {
+func FormatCounts(counts *[]uint64, name string, cr bool, lf bool) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	if cr {
 		buf.WriteByte(CARRIAGE_RETURN)
@@ -23,9 +23,9 @@ func FormatCounts(counts *[]uint64, label string, cr bool, lf bool) *bytes.Buffe
 		buf.WriteByte(SPACE)
 		buf.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[i]))
 	}
-	if label != "" {
+	if name != "" {
 		buf.WriteByte(SPACE)
-		buf.WriteString(label)
+		buf.WriteString(name)
 	}
 	if lf {
 		buf.WriteByte(LINE_FEED)
@@ -33,8 +33,8 @@ func FormatCounts(counts *[]uint64, label string, cr bool, lf bool) *bytes.Buffe
 	return buf
 }
 
-func PrintCounts(counts *[]uint64, label string, cr bool, lf bool) {
-	lwcutil.GetStdout().Write(FormatCounts(counts, label, cr, lf).Bytes())
+func PrintCounts(counts *[]uint64, name string, cr bool, lf bool) {
+	lwcutil.GetStdout().Write(FormatCounts(counts, name, cr, lf).Bytes())
 }
 
 func PollCounts(name string, counts *[]uint64, interval time.Duration, done chan bool) {

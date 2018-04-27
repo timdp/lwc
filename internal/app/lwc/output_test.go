@@ -94,10 +94,19 @@ func TestFormatCounts(t *testing.T) {
 	}
 }
 
-func TestPrintCounts(t *testing.T) {
+func TestPrintNamedCounts(t *testing.T) {
 	PrintCounts(&[]uint64{1, 2, 3}, "file", true, true)
 	actual := string(lwcutil.FlushStdoutBuffer())
 	expected := "\r       1        2        3 file\n"
+	if expected != actual {
+		t.Errorf("Expecting %#v, got %#v", expected, actual)
+	}
+}
+
+func TestPrintStdinCounts(t *testing.T) {
+	PrintCounts(&[]uint64{1, 2, 3}, "", true, true)
+	actual := string(lwcutil.FlushStdoutBuffer())
+	expected := "\r       1        2        3\n"
 	if expected != actual {
 		t.Errorf("Expecting %#v, got %#v", expected, actual)
 	}

@@ -7,7 +7,7 @@ import (
 
 func Run(version string) {
 	// Read command-line args
-	config := BuildConfig(os.Args)
+	config := NewConfig(os.Args)
 
 	switch {
 	case config.Version:
@@ -18,7 +18,6 @@ func Run(version string) {
 		config.PrintUsage()
 	default:
 		// Process input
-		processors := BuildProcessors(&config)
-		ProcessFiles(&config, processors)
+		ProcessFiles(config)
 	}
 }
