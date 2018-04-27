@@ -5,7 +5,7 @@
 [![Coverage Status](https://img.shields.io/coveralls/timdp/lwc/master.svg)](https://coveralls.io/r/timdp/lwc)
 [![Release](https://img.shields.io/github/release/timdp/lwc.svg)](https://github.com/timdp/lwc/releases/latest)
 
-A live-updating version of the UNIX [`wc` command](https://en.wikipedia.org/wiki/Wc_(Unix)).
+A live-updating version of the UNIX [`wc` command](https://linux.die.net/man/1/wc).
 
 ![](demo.gif)
 
@@ -31,7 +31,7 @@ Without any options, `lwc` will count the number of lines, words, and bytes
 in standard input, and write them to standard output. Contrary to `wc`, it will
 also update standard output while it is still counting.
 
-All the standard [`wc` options](https://en.wikipedia.org/wiki/Wc_(Unix)) are
+All the standard [`wc` options](https://linux.die.net/man/1/wc) are
 supported:
 
 - `--lines` or `-l`
