@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var uiReady bool
@@ -46,4 +48,8 @@ func FlushStdoutBuffer() []byte {
 	b := stdoutBuffer.Bytes()
 	stdoutBuffer.Reset()
 	return b
+}
+
+func StdoutIsTTY() bool {
+	return terminal.IsTerminal(int(os.Stdout.Fd()))
 }

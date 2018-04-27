@@ -64,12 +64,15 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 		}(pipes[index].R, processor, &counts[index], totalPtr)
 	}
 
-	// Write zeroes straightaway in case file is empty
-	PrintCounts(&counts, name, false, false)
-
-	// Update stdout at fixed intervals
-	done := make(chan bool)
-	go PollCounts(name, &counts, interval, done)
+	// Update stdout at fixed intervals, but only if it's a terminal
+	var done chan bool
+	if lwcutil.StdoutIsTTY() {
+		done = make(chan bool)
+		// Write zeroes straightaway in case file is empty
+		PrintCounts(&counts, name, false, false)
+		// Start updating stdout
+		go PollCounts(name, &counts, interval, done)
+	}
 
 	// Write to pipes
 	lwcutil.MultiPipe(file, lwcutil.GetPipeWriters(pipes))
@@ -78,7 +81,9 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 	wg.Wait()
 
 	// Stop polling
-	done <- true
+	if done != nil {
+		done <- true
+	}
 
 	// Write final counts
 	PrintCounts(&counts, name, true, true)

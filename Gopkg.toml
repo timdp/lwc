@@ -1,7 +1,11 @@
+[prune]
+  go-tests = true
+  unused-packages = true
+
 [[constraint]]
   branch = "master"
   name = "github.com/pborman/getopt"
 
-[prune]
-  go-tests = true
-  unused-packages = true
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
