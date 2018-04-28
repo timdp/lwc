@@ -65,8 +65,9 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 	}
 
 	// Update stdout at fixed intervals, but only if it's a terminal
+	live := lwcutil.StdoutIsTTY()
 	var done chan bool
-	if lwcutil.StdoutIsTTY() {
+	if live {
 		done = make(chan bool)
 		// Write zeroes straightaway in case file is empty
 		PrintCounts(&counts, name, false, false)
@@ -86,7 +87,7 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 	}
 
 	// Write final counts
-	PrintCounts(&counts, name, true, true)
+	PrintCounts(&counts, name, live, true)
 }
 
 func ProcessFiles(config *Config) {
