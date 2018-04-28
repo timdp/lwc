@@ -24,7 +24,8 @@ go get -u github.com/timdp/lwc/cmd/lwc
 ## Usage
 
 ```
-lwc [OPTION]...
+lwc [OPTION]... [FILE]...
+lwc [OPTION]... --files0-from=F
 ```
 
 Without any options, `lwc` will count the number of lines, words, and bytes
