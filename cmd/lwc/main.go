@@ -4,7 +4,7 @@ import (
 	"github.com/timdp/lwc/internal/app/lwc"
 )
 
-var version = ""
+var version = "master"
 var date = ""
 
 func main() {
