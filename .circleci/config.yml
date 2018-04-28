@@ -20,6 +20,7 @@ jobs:
           trap "go-junit-report < $TEST_RESULTS/go-test.out > $TEST_RESULTS/go-test-report.xml" EXIT
           go test -v -cover -race -coverprofile=$TEST_RESULTS/coverage.out ./... | tee $TEST_RESULTS/go-test.out
       - run: goveralls -coverprofile=$TEST_RESULTS/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+      - run: make test/integration
       - save_cache:
           key: v1-pkg-cache
           paths:

@@ -8,5 +8,13 @@ indent_size = 2
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.go]
+[*.go,Makefile]
 indent_style = tab
+
+[test/fixtures/**]
+charset = ignore
+end_of_line = ignore
+indent_style = ignore
+indent_size = ignore
+insert_final_newline = ignore
+trim_trailing_whitespace = ignore

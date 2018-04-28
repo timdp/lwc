@@ -4,8 +4,9 @@ import (
 	"github.com/timdp/lwc/internal/app/lwc"
 )
 
-var version = "master"
+var version = ""
+var date = ""
 
 func main() {
-	lwc.Run(version)
+	lwc.Run(version, date)
 }
