@@ -52,14 +52,33 @@ The default update interval is 100 ms.
 Count the number of lines in a big file:
 
 ```bash
-lwc --lines < big-file
+lwc --lines big-file
 ```
 
-Run a slow command and count the number of bytes logged:
+Run a slow command and count the number of lines and words logged:
 
 ```bash
-slow-command | lwc --bytes
+slow-command | lwc --lines --words
 ```
+
+Benchmark `lwc`'s throughput by counting random bytes (press Ctrl+C to exit):
+
+```bash
+lwc --bytes < /dev/urandom
+```
+
+## Caveats
+
+You can _mostly_ use `lwc` as a drop-in replacement for `wc`. However, you
+should be aware of the following:
+
+- The behavior of the `--words` and `--chars` options is slightly different
+  from `wc`'s implementation. You might get different values with certain
+  binary data.
+
+- While `lwc` is pretty fast, you won't get the same raw throughput as with
+  `wc`. The reason for that is (probably) twofold: the code isn't optimized for
+  performance, and a Go implementation is no match for a C one.
 
 ## JavaScript Version
 
