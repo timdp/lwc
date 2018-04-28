@@ -67,7 +67,7 @@ func (config *Config) Processors() []Processor {
 	var temp [5]Processor
 	i := 0
 	if config.Lines {
-		temp[i] = Processor{lwcutil.SplitOnByte(LINE_FEED, true), ScanCount}
+		temp[i] = Processor{lwcutil.ScanBytes(LINE_FEED, true), ScanCount}
 		i++
 	}
 	if config.Words {
@@ -83,7 +83,7 @@ func (config *Config) Processors() []Processor {
 		i++
 	}
 	if config.MaxLineLength {
-		temp[i] = Processor{bufio.ScanLines, ScanMaxLength}
+		temp[i] = Processor{lwcutil.ScanLines, ScanMaxLength}
 		i++
 	}
 	return temp[0:i]
