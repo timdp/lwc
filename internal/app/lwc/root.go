@@ -3,7 +3,6 @@ package lwc
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 func Run(version string, date string) {
@@ -15,7 +14,7 @@ func Run(version string, date string) {
 		// Print version and exit
 		fmt.Printf("lwc %s\n", version)
 		if date != "" {
-			fmt.Printf("Built %s\n", strings.Replace(date, "_", " ", -1))
+			fmt.Printf("Built %s\n", date)
 		}
 	case config.Help:
 		// Print usage and exit

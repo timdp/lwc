@@ -6,7 +6,7 @@ BIN=bin
 VERSION=$(shell git describe --tags --abbrev=0 --always)
 COMMIT=$(shell git log --pretty=format:'%h' -n 1)
 # Same format as goreleaser
-DATE=$(shell date +%Y-%m-%d_%H:%M:%S)
+DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS="-s -w -X main.version=$(VERSION)+git.$(COMMIT) -X main.date=$(DATE)"
 
 all: build test
