@@ -32,11 +32,10 @@ func GetPipeWriters(pipes []Pipe) []*io.PipeWriter {
 }
 
 func MultiPipe(reader io.Reader, pws []*io.PipeWriter) {
-	numCounts := len(pws)
-	writers := make([]io.Writer, numCounts)
-	for i := 0; i < numCounts; i++ {
-		defer pws[i].Close()
-		writers[i] = io.Writer(pws[i])
+	writers := make([]io.Writer, len(pws))
+	for i, pw := range pws {
+		defer pw.Close()
+		writers[i] = io.Writer(pw)
 	}
 	writer := io.MultiWriter(writers...)
 	if _, err := io.Copy(writer, reader); err != nil {
