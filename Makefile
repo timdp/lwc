@@ -30,5 +30,5 @@ build_release: bin
 test_unit:
 	$(GOCMD) test -v ./...
 
-test_integration: build_debug
+test_integration: build_release
 	test/integration.sh

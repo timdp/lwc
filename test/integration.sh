@@ -4,7 +4,7 @@ set -e
 
 [ -t 1 ] && TTY=1 || TTY=0
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
-LWC="$ROOT/bin/lwc-debug"
+LWC="$ROOT/bin/lwc"
 WC="$( which wc )"
 
 failures=0
