@@ -5,14 +5,17 @@ import (
 	"io"
 )
 
-const END_OF_FILES string = ""
+// EndOfFiles marks the end of the list of files
+const EndOfFiles string = ""
 
+// ValidateFileName checks whether the given string is a valid file name
 func ValidateFileName(name string) {
 	if len(name) == 0 {
 		Fatal("invalid zero-length file name")
 	}
 }
 
+// NewFilesChanFromSlice creates a files chan from a string slice
 func NewFilesChanFromSlice(values []string) *chan string {
 	c := make(chan string)
 	go func() {
@@ -20,11 +23,12 @@ func NewFilesChanFromSlice(values []string) *chan string {
 			ValidateFileName(value)
 			c <- value
 		}
-		c <- END_OF_FILES
+		c <- EndOfFiles
 	}()
 	return &c
 }
 
+// NewFilesChanFromReader creates a files chan from a reader, one name per line
 func NewFilesChanFromReader(reader io.Reader, separator byte) *chan string {
 	c := make(chan string)
 	scanner := bufio.NewScanner(reader)
@@ -35,7 +39,7 @@ func NewFilesChanFromReader(reader io.Reader, separator byte) *chan string {
 			ValidateFileName(name)
 			c <- name
 		}
-		c <- END_OF_FILES
+		c <- EndOfFiles
 	}()
 	return &c
 }

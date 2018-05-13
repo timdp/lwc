@@ -5,7 +5,7 @@ import (
 	"bytes"
 )
 
-// Factory function for a SplitFunc that splits on the given byte value
+// ScanBytes creates a SplitFunc that splits on the given byte value
 func ScanBytes(b byte, requireEnd bool) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -21,7 +21,7 @@ func ScanBytes(b byte, requireEnd bool) bufio.SplitFunc {
 	}
 }
 
-// Like bufio.ScanLines but it also allows \r without subsequent \n
+// ScanLines scans by line, accepting \r, \n, or \r\n as the separator
 func ScanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil

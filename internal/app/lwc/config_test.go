@@ -20,7 +20,7 @@ var configTests = []configTest{
 		Config{
 			true, true, false, true, false,
 			"",
-			time.Duration(DEFAULT_INTERVAL) * time.Millisecond,
+			time.Duration(defaultInterval) * time.Millisecond,
 			false, false,
 			[]string{},
 			nil,
@@ -31,7 +31,7 @@ var configTests = []configTest{
 		Config{
 			true, true, false, false, false,
 			"",
-			time.Duration(DEFAULT_INTERVAL) * time.Millisecond,
+			time.Duration(defaultInterval) * time.Millisecond,
 			false, false,
 			[]string{},
 			nil,
@@ -42,7 +42,7 @@ var configTests = []configTest{
 		Config{
 			true, true, false, true, false,
 			"",
-			time.Duration(DEFAULT_INTERVAL) * time.Millisecond,
+			time.Duration(defaultInterval) * time.Millisecond,
 			false, false,
 			[]string{"foo"},
 			nil,
@@ -53,7 +53,7 @@ var configTests = []configTest{
 		Config{
 			true, true, false, true, false,
 			"",
-			time.Duration(DEFAULT_INTERVAL) * time.Millisecond,
+			time.Duration(defaultInterval) * time.Millisecond,
 			false, false,
 			[]string{"/path/to/file"},
 			nil,
@@ -64,7 +64,7 @@ var configTests = []configTest{
 		Config{
 			false, false, false, true, true,
 			"",
-			time.Duration(DEFAULT_INTERVAL) * time.Millisecond,
+			time.Duration(defaultInterval) * time.Millisecond,
 			false, false,
 			[]string{"/etc/passwd", "/etc/group"},
 			nil,

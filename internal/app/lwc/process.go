@@ -11,12 +11,13 @@ import (
 	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
+// Processor represents a scanner and splitter for input
 type Processor struct {
 	Split bufio.SplitFunc
 	Scan  ScanFunc
 }
 
-func ProcessReader(reader io.Reader, processor Processor, count *uint64, total *uint64) {
+func processReader(reader io.Reader, processor Processor, count *uint64, total *uint64) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(processor.Split)
 	processor.Scan(scanner, count, total)
@@ -25,17 +26,16 @@ func ProcessReader(reader io.Reader, processor Processor, count *uint64, total *
 	}
 }
 
-func OpenFile(namePtr *string) (string, *os.File) {
+func openFile(namePtr *string) (string, *os.File) {
 	if namePtr == nil {
 		return "", os.Stdin
-	} else {
-		return *namePtr, lwcutil.OpenFile(*namePtr)
 	}
+	return *namePtr, lwcutil.OpenFile(*namePtr)
 }
 
-func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, interval time.Duration) {
+func processFile(namePtr *string, processors []Processor, totals *[]uint64, interval time.Duration) {
 	// Open input file (can be stdin)
-	name, file := OpenFile(namePtr)
+	name, file := openFile(namePtr)
 
 	numCounts := len(processors)
 
@@ -60,7 +60,7 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 		}
 		go func(reader io.Reader, processor Processor, count *uint64, total *uint64) {
 			defer wg.Done()
-			ProcessReader(reader, processor, count, total)
+			processReader(reader, processor, count, total)
 		}(pipes[index].R, processor, &counts[index], totalPtr)
 	}
 
@@ -90,6 +90,7 @@ func ProcessFile(namePtr *string, processors []Processor, totals *[]uint64, inte
 	PrintCounts(&counts, name, live, true)
 }
 
+// ProcessFiles processes files as required by the configuration
 func ProcessFiles(config *Config) {
 	files := config.FilesChan()
 	processors := config.Processors()
@@ -98,7 +99,7 @@ func ProcessFiles(config *Config) {
 
 	// If no files given, process stdin
 	if name1 == "" {
-		ProcessFile(nil, processors, nil, config.Interval)
+		processFile(nil, processors, nil, config.Interval)
 		return
 	}
 
@@ -113,17 +114,17 @@ func ProcessFiles(config *Config) {
 		totals = &totalsRaw
 	}
 
-	ProcessFile(&name1, processors, totals, config.Interval)
+	processFile(&name1, processors, totals, config.Interval)
 
 	if name2 != "" {
-		ProcessFile(&name2, processors, totals, config.Interval)
+		processFile(&name2, processors, totals, config.Interval)
 
 		// Process files sequentially
 		for name := range *files {
-			if name == lwcutil.END_OF_FILES {
+			if name == lwcutil.EndOfFiles {
 				break
 			}
-			ProcessFile(&name, processors, totals, config.Interval)
+			processFile(&name, processors, totals, config.Interval)
 		}
 	}
 

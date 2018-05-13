@@ -9,8 +9,9 @@ import (
 	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
-const DEFAULT_INTERVAL int = 100
+const defaultInterval int = 100
 
+// Config represents a configuration
 type Config struct {
 	Lines         bool
 	Words         bool
@@ -25,14 +26,16 @@ type Config struct {
 	g             *getopt.Set
 }
 
+// PrintUsage prints usage
 func (c *Config) PrintUsage() {
 	writer := lwcutil.GetStdout()
 	c.g.PrintUsage(writer)
 	fmt.Fprintln(writer, "\nFull documentation at: <https://github.com/timdp/lwc>")
 }
 
+// NewConfig creates a new Config
 func NewConfig(args []string) *Config {
-	intervalMs := DEFAULT_INTERVAL
+	intervalMs := defaultInterval
 	var c Config
 	c.g = getopt.New()
 	c.g.SetParameters("[file ...]")
@@ -45,7 +48,7 @@ func NewConfig(args []string) *Config {
 		"read input from the files specified by NUL-terminated names in file F",
 		"F")
 	c.g.FlagLong(&intervalMs, "interval", 'i',
-		fmt.Sprintf("set the update interval to T ms (default %d ms)", DEFAULT_INTERVAL),
+		fmt.Sprintf("set the update interval to T ms (default %d ms)", defaultInterval),
 		"T")
 	c.g.FlagLong(&c.Help, "help", 0, "display this help and exit")
 	c.g.FlagLong(&c.Version, "version", 0, "output version information and exit")
@@ -63,37 +66,38 @@ func NewConfig(args []string) *Config {
 	return &c
 }
 
-func (config *Config) Processors() []Processor {
+// Processors creates the processors enabled by the configuration
+func (c *Config) Processors() []Processor {
 	var temp [5]Processor
 	i := 0
-	if config.Lines {
-		temp[i] = Processor{lwcutil.ScanBytes(LINE_FEED, true), ScanCount}
+	if c.Lines {
+		temp[i] = Processor{lwcutil.ScanBytes(LineFeed, true), ScanCount}
 		i++
 	}
-	if config.Words {
+	if c.Words {
 		temp[i] = Processor{bufio.ScanWords, ScanCount}
 		i++
 	}
-	if config.Chars {
+	if c.Chars {
 		temp[i] = Processor{bufio.ScanRunes, ScanCount}
 		i++
 	}
-	if config.Bytes {
+	if c.Bytes {
 		temp[i] = Processor{bufio.ScanBytes, ScanCount}
 		i++
 	}
-	if config.MaxLineLength {
+	if c.MaxLineLength {
 		temp[i] = Processor{lwcutil.ScanLines, ScanMaxLength}
 		i++
 	}
 	return temp[0:i]
 }
 
-func (config *Config) FilesChan() *chan string {
-	if config.Files0From != "" {
-		reader := lwcutil.OpenFile(config.Files0From)
+// FilesChan creates the channel sending the filenames in the configuration
+func (c *Config) FilesChan() *chan string {
+	if c.Files0From != "" {
+		reader := lwcutil.OpenFile(c.Files0From)
 		return lwcutil.NewFilesChanFromReader(reader, byte(0))
-	} else {
-		return lwcutil.NewFilesChanFromSlice(config.Files)
 	}
+	return lwcutil.NewFilesChanFromSlice(c.Files)
 }

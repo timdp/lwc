@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// Run runs lwc
 func Run(version string, date string) {
 	// Read command-line args
 	config := NewConfig(os.Args)

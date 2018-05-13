@@ -11,13 +11,15 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// LastError is the last error produced during tests
+var LastError interface{}
+
 var uiReady bool
 var stdout io.Writer
 var stdoutBuffer *bytes.Buffer
 var fatal func(...interface{})
-var LastError interface{}
 
-func initUi() {
+func initUI() {
 	if !uiReady {
 		if flag.Lookup("test.v") != nil {
 			stdoutBuffer = new(bytes.Buffer)
@@ -33,16 +35,19 @@ func initUi() {
 	}
 }
 
+// GetStdout returns the writer that represents stdout in the environment's UI
 func GetStdout() io.Writer {
-	initUi()
+	initUI()
 	return stdout
 }
 
+// Fatal logs a fatal error to the environment's UI
 func Fatal(err interface{}) {
-	initUi()
+	initUI()
 	fatal(err)
 }
 
+// FlushStdoutBuffer flushes stdout for the environment's UI and returns its contents
 func FlushStdoutBuffer() []byte {
 	stdout.(*bufio.Writer).Flush()
 	b := stdoutBuffer.Bytes()
@@ -50,6 +55,7 @@ func FlushStdoutBuffer() []byte {
 	return b
 }
 
+// StdoutIsTTY returns true if stdout is a terminal, false otherwise
 func StdoutIsTTY() bool {
 	return terminal.IsTerminal(int(os.Stdout.Fd()))
 }

@@ -5,8 +5,10 @@ import (
 	"sync/atomic"
 )
 
+// ScanFunc represents a function that applies a scanner and updates counts
 type ScanFunc func(*bufio.Scanner, *uint64, *uint64)
 
+// ScanCount applies a scanner and adds one for every occurrence
 func ScanCount(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	for scanner.Scan() {
 		atomic.AddUint64(count, 1)
@@ -16,6 +18,7 @@ func ScanCount(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	}
 }
 
+// ScanMaxLength applies a scanner and remembers max string length
 func ScanMaxLength(scanner *bufio.Scanner, count *uint64, total *uint64) {
 	var localMax uint64
 	var globalMax uint64

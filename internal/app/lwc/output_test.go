@@ -31,9 +31,8 @@ func (t *formatTest) expected() []string {
 func withWithout(b bool) string {
 	if b {
 		return "with"
-	} else {
-		return "without"
 	}
+	return "without"
 }
 
 func tokenize(str string) []string {
@@ -77,7 +76,7 @@ var formatTests = []formatTest{
 
 func TestFormatCounts(t *testing.T) {
 	for i, test := range formatTests {
-		result := FormatCounts(&test.counts, test.label, test.cr, test.lf).String()
+		result := formatCounts(&test.counts, test.label, test.cr, test.lf).String()
 		hasCr := strings.HasPrefix(result, "\r")
 		if test.cr != hasCr {
 			t.Errorf("Test #%d failed: expecting string %s CR prefix", i, withWithout(test.cr))

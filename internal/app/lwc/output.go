@@ -8,32 +8,34 @@ import (
 	"github.com/timdp/lwc/internal/pkg/lwcutil"
 )
 
-const COUNT_FORMAT string = "%8d"
+const countFormat string = "%8d"
 
-func FormatCounts(counts *[]uint64, name string, cr bool, lf bool) *bytes.Buffer {
+func formatCounts(counts *[]uint64, name string, cr bool, lf bool) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	if cr {
-		buf.WriteByte(CARRIAGE_RETURN)
+		buf.WriteByte(CarriageReturn)
 	}
-	buf.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[0]))
+	buf.WriteString(fmt.Sprintf(countFormat, (*counts)[0]))
 	for i := 1; i < len(*counts); i++ {
-		buf.WriteByte(SPACE)
-		buf.WriteString(fmt.Sprintf(COUNT_FORMAT, (*counts)[i]))
+		buf.WriteByte(Space)
+		buf.WriteString(fmt.Sprintf(countFormat, (*counts)[i]))
 	}
 	if name != "" {
-		buf.WriteByte(SPACE)
+		buf.WriteByte(Space)
 		buf.WriteString(name)
 	}
 	if lf {
-		buf.WriteByte(LINE_FEED)
+		buf.WriteByte(LineFeed)
 	}
 	return buf
 }
 
+// PrintCounts writes formatted counts to stdout
 func PrintCounts(counts *[]uint64, name string, cr bool, lf bool) {
-	lwcutil.GetStdout().Write(FormatCounts(counts, name, cr, lf).Bytes())
+	lwcutil.GetStdout().Write(formatCounts(counts, name, cr, lf).Bytes())
 }
 
+// PollCounts periodically writes counts to stdout
 func PollCounts(name string, counts *[]uint64, interval time.Duration, done chan bool) {
 	tick := time.NewTicker(interval)
 	defer tick.Stop()
