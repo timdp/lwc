@@ -21,6 +21,16 @@ Alternatively, use `go get` to build from source:
 go get -u github.com/timdp/lwc/cmd/lwc
 ```
 
+On Debian-compatible Linux distributions such as Ubuntu, you can also use the
+_experimental_ APT repository:
+
+```bash
+echo 'deb [allow-insecure=yes] https://tmdpw.eu/lwc-releases/debian/ any main' |
+  sudo tee /etc/apt/sources.list.d/lwc.list
+sudo apt update
+sudo apt install lwc
+```
+
 ## Usage
 
 ```
