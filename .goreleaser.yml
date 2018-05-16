@@ -11,4 +11,17 @@ builds:
       - darwin
       - linux
     goarch:
+      - 386
       - amd64
+      - arm
+      - arm64
+nfpm:
+  name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  homepage: https://github.com/timdp/lwc
+  maintainer: Tim De Pauw <hi@tmdpw.eu>
+  description: A live-updating version of the UNIX wc command.
+  license: MIT
+  formats:
+    - deb
+    - rpm
+  bindir: /usr/bin
