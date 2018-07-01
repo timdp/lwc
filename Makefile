@@ -3,7 +3,7 @@ GOCMD=go
 MAIN=cmd/lwc/main.go
 BIN=bin
 
-VERSION=$(shell git describe --tags --abbrev=0 --always)
+VERSION=$(shell git describe --tags --abbrev --always)
 COMMIT=$(shell git log --pretty=format:'%h' -n 1)
 # Same format as goreleaser
 DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
