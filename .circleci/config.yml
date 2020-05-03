@@ -30,8 +30,6 @@ jobs:
             - /go/pkg
       - store_test_results:
           path: /tmp/test-results
-          when: always
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
-          when: always
