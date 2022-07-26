@@ -1,0 +1,6 @@
+github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30 h1:BHT1/DKsYDGkUgQ2jmMaozVcdk+sVfz0+1ZJq4zkWgw=
+github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
+golang.org/x/crypto v0.0.0-20180426230345-b49d69b5da94 h1:m5xBqfQdnzv6XuV/pJizrLOwUoGzyn1J249cA0cKL4o=
+golang.org/x/crypto v0.0.0-20180426230345-b49d69b5da94/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
+golang.org/x/sys v0.0.0-20180425194835-bb9c189858d9 h1:+wWbjU2lIhyVuf3l5jcSMKOCokMwx1eP/lpVWk1Ox0M=
+golang.org/x/sys v0.0.0-20180425194835-bb9c189858d9/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
