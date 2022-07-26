@@ -2,32 +2,21 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.10.1-stretch
-    working_directory: /go/src/github.com/timdp/lwc
+      - image: cimg/go:1.18.4
+    working_directory: /home/circleci/go/src/github.com/timdp/lwc
     environment:
       TEST_RESULTS: /tmp/test-results
-      DEP_VERSION: 0.4.1
     steps:
       - checkout
+      - run: make build_release
       - run: mkdir -p $TEST_RESULTS
-      - restore_cache:
-          keys:
-            - v1-pkg-cache-{{ checksum "Gopkg.lock" }}
+      - run: go install github.com/jstemmer/go-junit-report/v2@latest
+      - run: go install github.com/mattn/goveralls@latest
       - run: |
-          curl -L -s https://github.com/golang/dep/releases/download/v$DEP_VERSION/dep-linux-amd64 -o $GOPATH/bin/dep
-          chmod +x $GOPATH/bin/dep
-      - run: dep ensure
-      - run: go get github.com/jstemmer/go-junit-report
-      - run: go get github.com/mattn/goveralls
-      - run: |
-          trap "go-junit-report < $TEST_RESULTS/go-test.out > $TEST_RESULTS/go-test-report.xml" EXIT
+          trap "go-junit-report -set-exit-code < $TEST_RESULTS/go-test.out > $TEST_RESULTS/go-test-report.xml" EXIT
           go test -v -cover -race -coverprofile=$TEST_RESULTS/coverage.out ./... | tee $TEST_RESULTS/go-test.out
       - run: goveralls -coverprofile=$TEST_RESULTS/coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
       - run: make test_integration
-      - save_cache:
-          key: v1-pkg-cache-{{ checksum "Gopkg.lock" }}
-          paths:
-            - /go/pkg
       - store_test_results:
           path: /tmp/test-results
       - store_artifacts:
